@@ -1,72 +1,143 @@
+const applyEffects = (stat, value, effects) => {
+  return effects.reduce(
+    (value, effect) => (effect[stat]?.scalar ?? 1) * value + (effect[stat]?.offset ?? 0),
+    value
+  );
+};
+const reverseEffects = (stat, value, effects) => {
+  return effects
+    .reverse()
+    .reduce(
+      (value, effect) => (value - (effect[stat]?.offset ?? 0)) / (effect[stat]?.scalar ?? 1),
+      value
+    );
+};
+
 class Character {
   constructor({
     name,
     characterClass,
-    bonusStats: { health, mana, strength, defense } = {},
+    bonusStats: {
+      health: bonuseHealth,
+      mana: bonusMana,
+      strength: bonuseStrength,
+      defense: bonusDefense,
+    } = {},
     bonusAbilities = [],
   }) {
-    this.name = name;
-    this.stats = {
-      maxHealth: characterClass.generateStat('health') + (health ?? 0),
-      maxMana: characterClass.generateStat('health') + (mana ?? 0),
-      strength: characterClass.generateStat('strength') + (strength ?? 0),
-      defense: characterClass.generateStat('defense') + (defense ?? 0),
+    const stats = {
+      maxHealth: characterClass.generateStat('health') + (bonuseHealth ?? 0),
+      maxMana: characterClass.generateStat('health') + (bonusMana ?? 0),
+      strength: characterClass.generateStat('strength') + (bonuseStrength ?? 0),
+      defense: characterClass.generateStat('defense') + (bonusDefense ?? 0),
     };
-    this._health = this.stats.maxHealth;
-    this.mana = this.stats.maxHealth;
-    this.abilities = characterClass.abilities.concat(bonusAbilities);
-    this.effects = [];
-  }
 
-  get health() {
-    return this.effects.reduce(
-      (health, { health: { scalar, offset } }) => scalar * health + offset,
-      this._health
-    );
-  }
+    let health = stats.maxHealth;
+    let mana = stats.maxMana;
 
-  set health(value) {
-    this._health = this.effects
-      .reverse()
-      .reduce((value, { health: { scalar, offset } }) => (value - offset) / scalar, value);
-  }
+    const abilities = new Map([
+      ...characterClass.abilities.concat(bonusAbilities).map((ability) => [ability.name, ability]),
+    ]);
+    let effects = [];
 
-  get strength() {
-    return this.effects.reduce(
-      (strength, { strength: { scalar, offset } }) => scalar * strength + offset,
-      this.stats.strength
-    );
-  }
-
-  get defense() {
-    return this.effects.reduce(
-      (defense, { defense: { scalar, offset } }) => scalar * defense + offset,
-      this.stats.defense
-    );
+    Object.defineProperties(this, {
+      name: {
+        value: name,
+      },
+      stats: {
+        value: Object.defineProperties(
+          {},
+          {
+            health: {
+              get() {
+                return applyEffects('health', health, effects);
+              },
+              set(value) {
+                health = reverseEffects('health', value, effects);
+              },
+            },
+            mana: {
+              get() {
+                return applyEffects('mana', mana, effects);
+              },
+              set(value) {
+                mana = reverseEffects('mana', value, effects);
+              },
+            },
+            strength: {
+              get() {
+                return applyEffects('strength', stats.strength, effects);
+              },
+            },
+            defense: {
+              get() {
+                return applyEffects('strength', stats.defense, effects);
+              },
+            },
+          }
+        ),
+      },
+      baseStats: {
+        value: new Proxy(stats, {
+          set(obj, prop, value) {
+            if (!Reflect.has(stats, prop)) Reflect.set(...arguments);
+            if (value == null) throw new TypeError('cannot set stat to null or undefined');
+            switch (typeof value) {
+              case 'number': {
+                if (value <= 0) throw new RangeError('cannot set stat to negative number');
+                obj[prop] = value;
+                break;
+              }
+              default: {
+                Reflect.set(...arguments);
+                break;
+              }
+            }
+          },
+        }),
+      },
+      abilities: {
+        value: abilities,
+      },
+      effects: {
+        get: () => effects,
+        set(value) {
+          if (!Array.isArray(value)) throw TypeError('effects must be an array');
+          effects = value;
+        },
+      },
+    });
   }
 
   get isAlive() {
-    return this.health > 0;
+    return this.stats.health > 0;
   }
 
-  useAbility(index, victim) {
-    if (index < 0) {
+  useAbility(abilityName, victim) {
+    if (!this.abilities.has(abilityName)) {
       console.log(`${this.name} is cocky and decided to do nothing.`);
       return;
     }
-    this.abilities[index].apply(this, victim);
+    this.abilities.get(abilityName).apply(this, victim);
   }
 
   updateEffects(dt = 1) {
     this.effects = this.effects.filter((effect) => {
-      effect.duration -= dt;
-      if (effect.duration > 0) return true;
-      console.log(effect.completionMessage);
+      if (effect.duration == null) return true;
+      if (effect.isNew) {
+        effect.isNew = false;
+        return true;
+      } else {
+        effect.duration -= dt;
+        if (effect.duration > 0) return true;
+        effect.onDispel();
+        return false;
+      }
     });
   }
 
   toString() {
-    return `Character<${this.name}, HP:${this.health}, MP:${this.mana}, STR:${this.strength}, DEF:${this.defense}>`;
+    return `Character<${this.name}, HP:${this.stats.health}, MP:${this.stats.mana}, STR:${this.stats.strength}, DEF:${this.stats.defense}>`;
   }
 }
 
