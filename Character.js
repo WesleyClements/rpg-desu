@@ -49,7 +49,7 @@ class Character {
               set(value) {
                 if (typeof value !== 'number')
                   throw new TypeError('health must be a number ' + typeof value);
-                if (Number.isNaN(value)) throw new TypeError('health must be a number: ' + value);
+                if (Number.isNaN(value)) throw new RangeError('health must be a number: ' + value);
                 health = reverseEffects('health', value, effects);
               },
             },
@@ -60,7 +60,7 @@ class Character {
               set(value) {
                 if (typeof value !== 'number')
                   throw new TypeError('mana must be a number: ' + typeof value);
-                if (Number.isNaN(value)) throw new TypeError('mana must be a number: ' + value);
+                if (Number.isNaN(value)) throw new RangeError('mana must be a number: ' + value);
                 mana = reverseEffects('mana', value, effects);
               },
             },
@@ -71,7 +71,7 @@ class Character {
             },
             defense: {
               get() {
-                return applyEffects('strength', stats.defense, effects);
+                return applyEffects('defense', stats.defense, effects);
               },
             },
           }
@@ -81,7 +81,6 @@ class Character {
         value: new Proxy(stats, {
           set(obj, prop, value) {
             if (!Reflect.has(stats, prop)) Reflect.set(...arguments);
-            if (value == null) throw new TypeError('cannot set stat to null or undefined');
             switch (typeof value) {
               case 'number': {
                 if (value <= 0) throw new RangeError('cannot set stat to negative number');
@@ -89,8 +88,7 @@ class Character {
                 break;
               }
               default: {
-                Reflect.set(...arguments);
-                break;
+                throw new TypeError('cannot set stat to anything but a number: ' + typeof value);
               }
             }
           },
