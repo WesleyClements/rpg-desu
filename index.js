@@ -14,11 +14,24 @@ const getPlayerInfo = () => {
   });
 };
 
-const loop = () => {
-  return Promise.all([
-    controllers.Player.getAction(player, { enemies: [orc] }),
-    controllers.Humanoid.getAction(orc, { enemies: [player] }),
-  ]).then(([playerAction, enemyAction]) => {
+const loop = async () => {
+  const player = new Character({
+    ...(await getPlayerInfo()),
+    characterClass: Warrior,
+    bonusAbilities: [MageArmor, Shrink],
+  });
+  const orc = new Character({
+    name: 'Balethzar',
+    characterClass: Warrior,
+  });
+  console.log(
+    `${player.name} awakes butt-naked in the middle of an orc field. In the distance, ${player.name} sees a hulking figure sprinting full speed towards ${player.name}. It is ${orc.name}. Fight commence. ${player.name} rolls a nat 1 for initiative.`
+  );
+  while (player.isAlive && orc.isAlive) {
+    const [playerAction, enemyAction] = await Promise.all([
+      controllers.Player.getAction(player, { enemies: [orc] }),
+      controllers.Humanoid.getAction(orc, { enemies: [player] }),
+    ]);
     if (Math.random() > 0.5) {
       player.useAbility(playerAction.ability, playerAction.targets[0]);
       orc.useAbility(enemyAction.ability, player);
@@ -30,31 +43,12 @@ const loop = () => {
     orc.updateEffects();
     console.log(player.toString());
     console.log(orc.toString());
-    if (player.isAlive && orc.isAlive) return loop();
-  });
+  }
+  if (player.isAlive) {
+    console.log("Timmy survived. This isn't possible.");
+  } else {
+    console.log('There is nothing left of timmy.');
+  }
 };
 
-let player;
-const orc = new Character({
-  name: 'Balethzar',
-  characterClass: Warrior,
-});
-getPlayerInfo()
-  .then(({ name }) => {
-    player = new Character({
-      name,
-      characterClass: Warrior,
-      bonusAbilities: [MageArmor, Shrink],
-    });
-    console.log(
-      `${player.name} awakes butt-naked in the middle of an orc field. In the distance, ${player.name} sees a hulking figure sprinting full speed towards ${player.name}. It is ${orc.name}. Fight commence. ${player.name} rolls a nat 1 for initiative.`
-    );
-    return loop();
-  })
-  .then(() => {
-    if (player.isAlive) {
-      console.log("Timmy survived. This isn't possible.");
-    } else {
-      console.log('There is nothing left of timmy.');
-    }
-  });
+loop();
