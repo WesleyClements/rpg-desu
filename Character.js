@@ -47,6 +47,9 @@ class Character {
                 return applyEffects('health', health, effects);
               },
               set(value) {
+                if (typeof value !== 'number')
+                  throw new TypeError('health must be a number ' + typeof value);
+                if (Number.isNaN(value)) throw new TypeError('health must be a number: ' + value);
                 health = reverseEffects('health', value, effects);
               },
             },
@@ -55,6 +58,9 @@ class Character {
                 return applyEffects('mana', mana, effects);
               },
               set(value) {
+                if (typeof value !== 'number')
+                  throw new TypeError('mana must be a number: ' + typeof value);
+                if (Number.isNaN(value)) throw new TypeError('mana must be a number: ' + value);
                 mana = reverseEffects('mana', value, effects);
               },
             },
