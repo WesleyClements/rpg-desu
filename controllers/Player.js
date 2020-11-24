@@ -52,7 +52,6 @@ module.exports = {
           return action;
         }
         case 'ability': {
-          console.log('using ability');
           if (!action.ability) {
             const { ability } = await inquirer.prompt({
               type: 'list',
