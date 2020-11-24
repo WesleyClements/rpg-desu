@@ -1,8 +1,8 @@
 const inquirer = require('inquirer');
 
-const { Warrior } = require('./CharacterClasses');
 const Character = require('./Character');
-const { BasicAttack, MageArmor, Shrink } = require('./Abilities');
+const { Warrior } = require('./classes');
+const { MageArmor, Shrink } = require('./abilities');
 
 const getPlayerInfo = () => {
   return inquirer.prompt({
@@ -16,20 +16,20 @@ const getPlayerInfo = () => {
 const getPlayerAction = () => {
   return inquirer.prompt({
     type: 'list',
-    name: 'abilityIndex',
+    name: 'abilityName',
     message: 'What ability would you like to use?',
-    choices: player.abilities.map((ability, i) => ({ name: ability.name, value: i })),
+    choices: [...player.abilities.values()].map(({ name }) => name),
   });
 };
 
 const getEnemyAction = () => {
   if (Math.random() < 0.2) return -1;
-  return 0;
+  return 'Basic Attack';
 };
 
 const loop = () => {
   return Promise.all([getPlayerAction(), getEnemyAction()]).then(
-    ([{ abilityIndex: playerAction }, enemyAction]) => {
+    ([{ abilityName: playerAction }, enemyAction]) => {
       if (Math.random() > 0.5) {
         player.useAbility(playerAction, orc);
         orc.useAbility(enemyAction, player);
@@ -56,7 +56,7 @@ getPlayerInfo()
     player = new Character({
       name,
       characterClass: Warrior,
-      bonusAbilities: [new MageArmor(), new Shrink()],
+      bonusAbilities: [MageArmor, Shrink],
     });
     console.log(
       `${player.name} awakes butt-naked in the middle of an orc field. In the distance, ${player.name} sees a hulking figure sprinting full speed towards ${player.name}. It is ${orc.name}. Fight commence. ${player.name} rolls a nat 1 for initiative.`
