@@ -1,5 +1,5 @@
 const CharacterClass = require('./CharacterClass');
-const { BasicAttack } = require('../Abilities');
+const { BasicAttack } = require('../abilities');
 
 module.exports = {
   Warrior: new CharacterClass({
@@ -10,6 +10,6 @@ module.exports = {
       strength: { min: 20, max: 30 },
       defense: { min: 20, max: 30 },
     },
-    abilities: [new BasicAttack()],
+    abilities: [BasicAttack],
   }),
 };
