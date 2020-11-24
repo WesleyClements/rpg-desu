@@ -17,33 +17,21 @@ class Character {
   constructor(props) {
     if (props == null) throw new TypeError('no props were provided');
 
-    const { name, characterClass } = props;
-    if (name == null) throw new TypeError('no name was provided');
-    if (characterClass == null) throw new TypeError('no character class was provided');
-
-    const {
-      bonusStats: {
-        health: bonuseHealth,
-        mana: bonusMana,
-        strength: bonuseStrength,
-        defense: bonusDefense,
-      } = {},
-      bonusAbilities = [],
-    } = props;
+    const { name } = props;
+    if (name == null) throw new TypeError('name was not provided');
+    if (props.stats == null) throw new TypeError('stats was not provided');
 
     const stats = {
-      maxHealth: characterClass.generateStat('health') + (bonuseHealth ?? 0),
-      maxMana: characterClass.generateStat('health') + (bonusMana ?? 0),
-      strength: characterClass.generateStat('strength') + (bonuseStrength ?? 0),
-      defense: characterClass.generateStat('defense') + (bonusDefense ?? 0),
+      maxHealth: props.stats.health,
+      maxMana: props.stats.mana,
+      strength: props.stats.strength,
+      defense: props.stats.defense,
     };
 
     let health = stats.maxHealth;
     let mana = stats.maxMana;
 
-    const abilities = new Map([
-      ...characterClass.abilities.concat(bonusAbilities).map((ability) => [ability.name, ability]),
-    ]);
+    const abilities = new Map((props.abilities ?? []).map((ability) => [ability.name, ability]));
     let effects = [];
 
     Object.defineProperties(this, {
@@ -59,7 +47,7 @@ class Character {
                 return applyEffects('health', health, effects);
               },
               set(value) {
-                health = Math.max(reverseEffects('health', value, effects), 0);
+                health = reverseEffects('health', value, effects);
               },
             },
             mana: {
@@ -67,7 +55,7 @@ class Character {
                 return applyEffects('mana', mana, effects);
               },
               set(value) {
-                mana = Math.max(reverseEffects('mana', value, effects), 0);
+                mana = reverseEffects('mana', value, effects);
               },
             },
             strength: {
@@ -143,7 +131,10 @@ class Character {
   }
 
   toString() {
-    return `Character<${this.name}, HP:${this.stats.health}, MP:${this.stats.mana}, STR:${this.stats.strength}, DEF:${this.stats.defense}>`;
+    return `Character<${this.name}, HP:${Math.max(this.stats.health, 0)}, MP:${Math.max(
+      this.stats.mana,
+      0
+    )}, STR:${this.stats.strength}, DEF:${this.stats.defense}>`;
   }
 }
 

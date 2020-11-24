@@ -16,5 +16,14 @@ class CharacterClass {
     const max = this.stats[statName].max ?? 0;
     return min + Math.floor((max - min) * Math.random());
   }
+
+  generateStats({ health, mana, strength, defense } = {}) {
+    return {
+      health: this.generateStat('health') + (health ?? 0),
+      mana: this.generateStat('mana') + (mana ?? 0),
+      strength: this.generateStat('strength') + (strength ?? 0),
+      defense: this.generateStat('defense') + (defense ?? 0),
+    };
+  }
 }
 module.exports = CharacterClass;

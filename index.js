@@ -3,7 +3,7 @@ const inquirer = require('inquirer');
 const controllers = require('./controllers');
 const Character = require('./Character');
 const { Warrior } = require('./classes');
-const { MageArmor, Shrink } = require('./abilities');
+const { BasicAttack, MageArmor, Shrink } = require('./abilities');
 
 const getPlayerInfo = () => {
   return inquirer.prompt({
@@ -16,13 +16,14 @@ const getPlayerInfo = () => {
 
 const loop = async () => {
   const player = new Character({
-    characterClass: Warrior,
-    bonusAbilities: [MageArmor, Shrink],
+    stats: Warrior.generateStats(),
+    abilities: [BasicAttack, MageArmor, Shrink],
     ...(await getPlayerInfo()),
   });
   const orc = new Character({
     name: 'Balethzar',
-    characterClass: Warrior,
+    stats: Warrior.generateStats(),
+    abilities: [BasicAttack],
   });
   console.log(
     `${player.name} awakes butt-naked in the middle of an orc field. In the distance, ${player.name} sees a hulking figure sprinting full speed towards ${player.name}. It is ${orc.name}. Fight commence. ${player.name} rolls a nat 1 for initiative.`
