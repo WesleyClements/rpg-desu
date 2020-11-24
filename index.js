@@ -1,5 +1,6 @@
 const inquirer = require('inquirer');
 
+const controllers = require('./controllers');
 const Character = require('./Character');
 const { Warrior } = require('./classes');
 const { MageArmor, Shrink } = require('./abilities');
@@ -13,37 +14,24 @@ const getPlayerInfo = () => {
   });
 };
 
-const getPlayerAction = () => {
-  return inquirer.prompt({
-    type: 'list',
-    name: 'abilityName',
-    message: 'What ability would you like to use?',
-    choices: [...player.abilities.values()].map(({ name }) => name),
-  });
-};
-
-const getEnemyAction = () => {
-  if (Math.random() < 0.2) return -1;
-  return 'Basic Attack';
-};
-
 const loop = () => {
-  return Promise.all([getPlayerAction(), getEnemyAction()]).then(
-    ([{ abilityName: playerAction }, enemyAction]) => {
-      if (Math.random() > 0.5) {
-        player.useAbility(playerAction, orc);
-        orc.useAbility(enemyAction, player);
-      } else {
-        orc.useAbility(enemyAction, player);
-        player.useAbility(playerAction, orc);
-      }
-      player.updateEffects();
-      orc.updateEffects();
-      console.log(player.toString());
-      console.log(orc.toString());
-      if (player.isAlive && orc.isAlive) return loop();
+  return Promise.all([
+    controllers.Player.getAction(player, { enemies: [orc] }),
+    controllers.Humanoid.getAction(orc, { enemies: [player] }),
+  ]).then(([playerAction, enemyAction]) => {
+    if (Math.random() > 0.5) {
+      player.useAbility(playerAction.ability, playerAction.targets[0]);
+      orc.useAbility(enemyAction.ability, player);
+    } else {
+      orc.useAbility(enemyAction.ability, player);
+      player.useAbility(playerAction.ability, playerAction.targets[0]);
     }
-  );
+    player.updateEffects();
+    orc.updateEffects();
+    console.log(player.toString());
+    console.log(orc.toString());
+    if (player.isAlive && orc.isAlive) return loop();
+  });
 };
 
 let player;
