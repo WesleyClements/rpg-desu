@@ -53,7 +53,7 @@ class Character {
                 return applyEffects('health', health, effects);
               },
               set(value) {
-                health = reverseEffects('health', value, effects);
+                health = Math.max(reverseEffects('health', value, effects), 0);
               },
             },
             mana: {
@@ -61,7 +61,7 @@ class Character {
                 return applyEffects('mana', mana, effects);
               },
               set(value) {
-                mana = reverseEffects('mana', value, effects);
+                mana = Math.max(reverseEffects('mana', value, effects), 0);
               },
             },
             strength: {

@@ -16,9 +16,9 @@ const getPlayerInfo = () => {
 
 const loop = async () => {
   const player = new Character({
-    ...(await getPlayerInfo()),
     characterClass: Warrior,
     bonusAbilities: [MageArmor, Shrink],
+    ...(await getPlayerInfo()),
   });
   const orc = new Character({
     name: 'Balethzar',
