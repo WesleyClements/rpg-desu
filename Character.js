@@ -14,17 +14,23 @@ const reverseEffects = (stat, value, effects) => {
 };
 
 class Character {
-  constructor({
-    name,
-    characterClass,
-    bonusStats: {
-      health: bonuseHealth,
-      mana: bonusMana,
-      strength: bonuseStrength,
-      defense: bonusDefense,
-    } = {},
-    bonusAbilities = [],
-  }) {
+  constructor(props) {
+    if (props == null) throw new TypeError('no props were provided');
+
+    const { name, characterClass } = props;
+    if (name == null) throw new TypeError('no name was provided');
+    if (characterClass == null) throw new TypeError('no character class was provided');
+
+    const {
+      bonusStats: {
+        health: bonuseHealth,
+        mana: bonusMana,
+        strength: bonuseStrength,
+        defense: bonusDefense,
+      } = {},
+      bonusAbilities = [],
+    } = props;
+
     const stats = {
       maxHealth: characterClass.generateStat('health') + (bonuseHealth ?? 0),
       maxMana: characterClass.generateStat('health') + (bonusMana ?? 0),
