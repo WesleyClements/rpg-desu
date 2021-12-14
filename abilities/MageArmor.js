@@ -1,8 +1,11 @@
-const { canUse } = require('./util');
-module.exports = {
+import { canUse } from './util/index.js';
+/**
+ * @type {import('.').Ability}
+ */
+export const MageArmor = {
   name: 'Mage Armor',
   manaCost: 1,
-  target: 'self',
+  targeting: 'self',
   apply(user) {
     if (!canUse(user, this.manaCost)) {
       console.log(`${user.name}'s spell fizzled in their face...`);
@@ -12,8 +15,10 @@ module.exports = {
       user.effects.push({
         isNew: true,
         duration: 2,
-        defense: { offset: 300 },
-        onDispel: () => {
+        attributeModifiers: {
+          defense: { offset: 300 },
+        },
+        onComplete: () => {
           console.log(`${user.name}'s magic cloak vanished...`);
         },
       });

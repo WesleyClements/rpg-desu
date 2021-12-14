@@ -1,24 +1,50 @@
-const inquirer = require('inquirer');
+import inquirer from 'inquirer';
 
-const selectTarget = ({ message, choices }) => {
-  return choices.length > 1
-    ? inquirer.prompt({
-        type: 'list',
-        name: 'target',
-        message,
-        choices: [
-          ...choices.map((target) => ({ name: target.name, value: target })),
-          { name: 'Go Back', value: null },
-        ],
-      })
-    : { target: choices[0] };
+/**
+ * @typedef {import('../Character.js')} Character
+ */
+
+const getNonNullValue = async (provider) => {
+  let value;
+  do {
+    value = await provider();
+  } while (value == null);
+  return value;
 };
 
-module.exports = {
-  async getAction(character, state) {
-    const action = {};
-    while (!action.type && !action.targets) {
-      if (!action.type) {
+/**
+ * @typedef {object} TargetPromptParams
+ * @property {string} message - the prompt message
+ * @property {Array<Character>} choices - the targets to chose from
+ */
+
+/**
+ * @async
+ * @function selectTarget
+ * @param {TargetPromptParams} params 
+ * @returns {Promise<object>}
+ */
+const selectTarget = async ({ message, choices }) => {
+  if (choices.length == 1) return choices[0];
+  const { target } = await inquirer.prompt({
+    type: 'list',
+    name: 'target',
+    message,
+    choices: [
+      ...choices.map((target) => ({ name: target.name, value: target })),
+      { name: 'Go Back', value: null },
+    ],
+  });
+  return target;
+};
+
+/**
+ * @type {import('.').CharacterController}
+ */
+export const Player = {
+  async getNextAction(character, state) {
+    return await getNonNullValue(
+      async () => {
         const { actionType } = await inquirer.prompt({
           type: 'list',
           name: 'actionType',
@@ -27,84 +53,70 @@ module.exports = {
             { name: 'Attack', value: 'attack' },
             { name: 'Use Ability', value: 'ability' },
             { name: 'Use Item', value: 'item' },
-          ],
+          ]
         });
-        if (actionType === 'item') {
-          console.log(`${character.name} doesn't know how to use items...`);
-          continue;
-        }
-        action.type = actionType;
-      }
-      switch (action.type) {
+        switch (actionType) {
         case 'attack': {
-          action.type = 'ability';
-          action.ability = 'Basic Attack';
-          const { target } = await selectTarget({
+          const target = await selectTarget({
             message: `Who does ${character.name} attack?`,
             choices: state.enemies,
           });
-          if (target == null) {
-            delete action.type;
-            delete action.ability;
-            continue;
-          }
-          action.targets = [target];
-          return action;
+          if (target == null) break;
+          return {
+            type: 'ability',
+            ability: 'Basic Attack',
+            targets: [target]
+          };
         }
         case 'ability': {
-          if (!action.ability) {
-            const { ability } = await inquirer.prompt({
-              type: 'list',
-              name: 'ability',
-              message: `What ability should ${character.name} use?`,
-              choices: [
-                ...[...character.abilities.values()]
-                  .filter(({ name }) => name !== 'Basic Attack')
-                  .map((ability) => ({ name: ability.name, value: ability })),
-                { name: 'Go Back', value: null },
-              ],
-            });
-            if (ability == null) {
-              delete action.type;
-              delete action.ability;
-              continue;
-            }
-            action.ability = ability;
-          }
-          switch (action.ability.target) {
+          const { ability } = await inquirer.prompt({
+            type: 'list',
+            name: 'ability',
+            message: `What ability should ${character.name} use?`,
+            choices: [
+              ...[...character.abilities.values()]
+                .filter(({ name }) => name !== 'Basic Attack')
+                .map((ability) => ({ name: ability.name, value: ability })),
+              { name: 'Go Back', value: null },
+            ],
+          });
+          if (ability == null) break;
+          const targets = await (async() => {
+            switch (ability.targeting) {
             case 'self': {
-              action.targets = [];
-              break;
+              return [];
             }
             case 'friendly': {
               break;
             }
             case 'enemy': {
-              const { target } = await selectTarget({
-                message: `Who does ${character.name} target with ${action.ability.name}?`,
+              const target = await selectTarget({
+                message: `Who does ${character.name} target with ${ability.name}?`,
                 choices: state.enemies,
               });
-              if (target == null) {
-                delete action.type;
-                delete action.ability;
-                continue;
-              }
-              action.targets = [target];
-              break;
+              if (target == null) break;
+              return [target];
             }
             case 'any': {
               break;
             }
-          }
-          action.ability = action.ability.name;
-          return action;
+            }
+            return null;
+          })();
+
+          return {
+            type: 'ability',
+            ability: ability.name,
+            targets
+          };
         }
-        default: {
-          delete action.type;
-          delete action.ability;
+        case 'item': {
+          console.log(`${character.name} doesn't know how to use items...`);
+          break;
         }
+        }
+        return null;
       }
-    }
-    return action;
+    );
   },
 };
